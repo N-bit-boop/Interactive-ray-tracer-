@@ -1,0 +1,2 @@
+C:/Users/niran/OneDrive/Desktop/RayInter/build/CMakeFiles/edit_cache.dir
+C:/Users/niran/OneDrive/Desktop/RayInter/build/CMakeFiles/rebuild_cache.dir
