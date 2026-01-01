@@ -16,6 +16,9 @@ class camera{
         point3 lookfrom = point3(0,0,0);
         point3 lookat = point3(0,0,-1);
         vec3 vup = vec3(0,1,0);
+        point3 camera_position;
+        vec3 camera_forward;
+
 
         void render(const hittable& world ){
             initialize();

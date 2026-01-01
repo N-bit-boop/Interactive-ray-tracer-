@@ -96,7 +96,8 @@ int main(int argc, char* argv[])
 
     cam.vfov = 90;
     cam.lookat = point3(0,0,-1);
-    cam.lookfrom = point3(-2,2,1);
+    cam.camera_position = point3(-2,2,1);
+    cam.lookfrom = cam.camera_position;
     cam.vup = vec3(0,1,0);
 
     cam.prepare();
