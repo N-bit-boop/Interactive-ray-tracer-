@@ -17,6 +17,9 @@ const int WIDTH  = 800;
 const int HEIGHT = 600;
 const int max_depth = 10;
 const double MOVE_SPEED = 3.0;
+double yaw   = -90.0; // facing -Z initially
+double pitch =  0.0;
+const double MOUSE_SENS = 0.1;
 
 int main(int argc, char* argv[])
 {
@@ -106,11 +109,8 @@ int main(int argc, char* argv[])
     Uint64 last_ticks  = SDL_GetPerformanceCounter();
     double delta_time = 0.0; //Seconds since last frame
 
-    vec3 forward = unit_vector(cam.lookat -cam.lookfrom);
-    vec3 right = unit_vector(cross(forward, cam.vup));
-
-
-
+      //enable relative mouse mode
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     // 6. Main loop
     while (running) {
@@ -127,6 +127,23 @@ int main(int argc, char* argv[])
         delta_time  = (double)(current_ticks - last_ticks) / SDL_GetPerformanceFrequency();
         last_ticks = current_ticks;
         const Uint8* keys = SDL_GetKeyboardState(nullptr);
+        int dx, dy;
+        
+        SDL_GetRelativeMouseState(&dx, &dy);
+        yaw += dx * MOUSE_SENS;
+        pitch -= dy * MOUSE_SENS;
+
+        if(pitch > 89.0) pitch = 89.0;
+        if(pitch < -89.0) pitch = -89.0; //Prevents camera flipping and gimbal lock
+
+        vec3 forward(
+            cos(degrees_to_radians(yaw)) * cos(degrees_to_radians(pitch)),
+            sin(degrees_to_radians(pitch)),
+            sin(degrees_to_radians(yaw)) * cos(degrees_to_radians(pitch))
+        );
+        
+        vec3 right = unit_vector(cross(forward, cam.vup));
+
 
         if (keys[SDL_SCANCODE_W]) {
         cam.camera_position += forward * MOVE_SPEED * delta_time;
@@ -145,7 +162,11 @@ int main(int argc, char* argv[])
         }
 
         cam.lookfrom = cam.camera_position;
+        cam.lookat =cam.camera_position + forward;
         cam.prepare(); //Because we moved around the internal math was invalid, need to re inititialize
+        
+      
+
 
         // --- Render into CPU framebuffer ---
         for (int y = 0; y < HEIGHT; ++y) {
