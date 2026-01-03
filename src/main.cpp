@@ -21,6 +21,8 @@ double yaw   = -90.0; // facing -Z initially
 double pitch =  0.0;
 const double MOUSE_SENS = 0.1;
 
+const int MAX_ACCUM_FRAMES = 64;
+
 int main(int argc, char* argv[])
 {
     // 1. Initialize SDL
@@ -94,7 +96,7 @@ int main(int argc, char* argv[])
     world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, center_material));
 
     camera cam;
-    cam.aspect_ratio = 16.0/9.0;
+    cam.aspect_ratio = double(WIDTH)/HEIGHT;
     cam.image_width = WIDTH;
     cam.samples_per_pixel = 1;
     cam.max_depth = 50;
@@ -145,6 +147,7 @@ int main(int argc, char* argv[])
             sin(degrees_to_radians(pitch)),
             sin(degrees_to_radians(yaw)) * cos(degrees_to_radians(pitch))
         );
+        forward = unit_vector(forward);
         
         vec3 right = unit_vector(cross(forward, cam.vup));
 
@@ -164,13 +167,20 @@ int main(int argc, char* argv[])
         if (keys[SDL_SCANCODE_D]) {
             cam.camera_position += right * MOVE_SPEED * delta_time;
         }
-
+        
+        if (abs(dx) > 0 || abs(dy) > 0 ||
+            keys[SDL_SCANCODE_W] || keys[SDL_SCANCODE_A] ||
+            keys[SDL_SCANCODE_S] || keys[SDL_SCANCODE_D]) {
+            camera_moved = true;
+        }
+        
+        
+       if(camera_moved){
         cam.lookfrom = cam.camera_position;
         cam.lookat =cam.camera_position + forward;
         cam.prepare(); //Because we moved around the internal math was invalid, need to re inititialize
-        
-       if(camera_moved){
         std::fill(accum_buffer.begin(), accum_buffer.end(), color(0,0,0));
+        frame_count = 0; //Averaging samples from different camera positions and requires a clear 
        } // Old samples are invalid as the camera changes
        
        frame_count++;
@@ -184,11 +194,18 @@ int main(int argc, char* argv[])
                 ray r = cam.get_ray(x,y);
                 color sample = cam.ray_color(r,cam.max_depth, world);
                 
-                //Accumulate in float buffer
-                accum_buffer[idx] += sample;
+                
+                
+
+                if (frame_count < MAX_ACCUM_FRAMES){
+                
+                    //Accumulate in float buffer
+                    accum_buffer[idx] += sample;
+                }
 
                 //Compute average colour
-                color averaged = accum_buffer[idx] / frame_count;
+                int denom = std::min(frame_count, MAX_ACCUM_FRAMES);
+                color averaged = accum_buffer[idx] / denom;
 
                 //convert into a displayable pixel
                 framebuffer[idx] = pack_color(averaged);
