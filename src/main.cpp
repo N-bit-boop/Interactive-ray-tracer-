@@ -61,6 +61,8 @@ int main(int argc, char* argv[])
 
     // 4. Create CPU framebuffer (RGBA8888)
     std::vector<uint32_t> framebuffer(WIDTH * HEIGHT);
+    std::vector<color> accum_buffer(WIDTH *HEIGHT , color(0,0,0));
+    int frame_count{0};
 
     // 5. Create SDL texture (GPU-side)
     SDL_Texture* texture = SDL_CreateTexture(
@@ -106,6 +108,8 @@ int main(int argc, char* argv[])
 
     cam.prepare();
 
+    bool camera_moved = false;
+
     Uint64 last_ticks  = SDL_GetPerformanceCounter();
     double delta_time = 0.0; //Seconds since last frame
 
@@ -122,7 +126,7 @@ int main(int argc, char* argv[])
                 running = false;
             }
         }
-
+        
         Uint64 current_ticks = SDL_GetPerformanceCounter();
         delta_time  = (double)(current_ticks - last_ticks) / SDL_GetPerformanceFrequency();
         last_ticks = current_ticks;
@@ -165,16 +169,30 @@ int main(int argc, char* argv[])
         cam.lookat =cam.camera_position + forward;
         cam.prepare(); //Because we moved around the internal math was invalid, need to re inititialize
         
-      
+       if(camera_moved){
+        std::fill(accum_buffer.begin(), accum_buffer.end(), color(0,0,0));
+       } // Old samples are invalid as the camera changes
+       
+       frame_count++;
 
 
         // --- Render into CPU framebuffer ---
         for (int y = 0; y < HEIGHT; ++y) {
             for (int x = 0; x < WIDTH; ++x) {
-                ray r = cam.get_ray(x, y);
-                color pixel_color = cam.ray_color(r, cam.max_depth, world);
-                pixel_color *= cam.pixel_samples_scale;
-                framebuffer[y*WIDTH + x] = pack_color(pixel_color);
+                int idx = y * WIDTH + x;
+                //Trace one new sample
+                ray r = cam.get_ray(x,y);
+                color sample = cam.ray_color(r,cam.max_depth, world);
+                
+                //Accumulate in float buffer
+                accum_buffer[idx] += sample;
+
+                //Compute average colour
+                color averaged = accum_buffer[idx] / frame_count;
+
+                //convert into a displayable pixel
+                framebuffer[idx] = pack_color(averaged);
+
             }
         }
 
