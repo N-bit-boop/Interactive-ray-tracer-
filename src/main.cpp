@@ -16,6 +16,7 @@
 const int WIDTH  = 800;
 const int HEIGHT = 600;
 const int max_depth = 10;
+const double MOVE_SPEED = 3.0;
 
 int main(int argc, char* argv[])
 {
@@ -102,6 +103,14 @@ int main(int argc, char* argv[])
 
     cam.prepare();
 
+    Uint64 last_ticks  = SDL_GetPerformanceCounter();
+    double delta_time = 0.0; //Seconds since last frame
+
+    vec3 forward = unit_vector(cam.lookat -cam.lookfrom);
+    vec3 right = unit_vector(cross(forward, cam.vup));
+
+
+
 
     // 6. Main loop
     while (running) {
@@ -113,6 +122,30 @@ int main(int argc, char* argv[])
                 running = false;
             }
         }
+
+        Uint64 current_ticks = SDL_GetPerformanceCounter();
+        delta_time  = (double)(current_ticks - last_ticks) / SDL_GetPerformanceFrequency();
+        last_ticks = current_ticks;
+        const Uint8* keys = SDL_GetKeyboardState(nullptr);
+
+        if (keys[SDL_SCANCODE_W]) {
+        cam.camera_position += forward * MOVE_SPEED * delta_time;
+        }
+
+        if (keys[SDL_SCANCODE_S]) {
+            cam.camera_position -= forward * MOVE_SPEED * delta_time;
+        }
+
+        if (keys[SDL_SCANCODE_A]) {
+            cam.camera_position -= right * MOVE_SPEED * delta_time;
+        }
+
+        if (keys[SDL_SCANCODE_D]) {
+            cam.camera_position += right * MOVE_SPEED * delta_time;
+        }
+
+        cam.lookfrom = cam.camera_position;
+        cam.prepare(); //Because we moved around the internal math was invalid, need to re inititialize
 
         // --- Render into CPU framebuffer ---
         for (int y = 0; y < HEIGHT; ++y) {
