@@ -23,16 +23,18 @@ Example using g++ on Windows/Linux:
 
 ```bash
 g++ *.cpp -o raytracer -lSDL2
-⚠️ Compilation flags may vary depending on your SDL2 installation.
 
 ```
+⚠️ Compilation flags may vary depending on your SDL2 installation.
 
 ### 3. Run the Ray Tracer
 ```bash
 
 ./raytracer
-A window will open displaying the scene. The CPU will continuously render frames into the framebuffer with accumulation-based anti-aliasing.
 ```
+
+A window will open displaying the scene. The CPU will continuously render frames into the framebuffer with accumulation-based anti-aliasing.
+
 
 ### 4. Controls
 Camera Movement
